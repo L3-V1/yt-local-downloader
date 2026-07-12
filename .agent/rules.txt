@@ -1,0 +1,55 @@
+# MANUAL DE BOAS PRÁTICAS E PADRÕES DE PROGRAMAÇÃO PARA AGENTES DE I.A. (VIBE CODING)
+# Versão 1.0 - Guia de Diretrizes de Desenvolvimento Automatizado
+
+Este documento estabelece o conjunto de regras, padrões de arquitetura e boas práticas que devem ser rigorosamente seguidos por agentes de Inteligência Artificial durante sessões de desenvolvimento colaborativo e autônomo (Vibe Coding). O objetivo é garantir código limpo, sustentável, seguro e de fácil manutenção por humanos.
+
+---
+
+## 1. PRINCÍPIOS ARQUITETURAIS E DESIGN DE CÓDIGO
+
+### 1.1. SOLID & Clean Code
+* **Responsabilidade Única (SRP):** Cada classe, módulo ou função deve ter apenas uma razão para mudar e realizar apenas uma tarefa bem definida.
+* **Funções Pequenas e Focadas:** Funções não devem exceder, idealmente, 20 a 30 linhas de código. Se uma função faz mais de uma coisa, extraia-a em subfunções.
+* **Evite Acoplamento Rígido:** Utilize injeção de dependência e programe voltado para interfaces/abstrações, nunca para implementações concretas.
+
+### 1.2. Padrões de Nomenclatura (Naming Conventions)
+* **Expressividade:** Nomes de variáveis, funções e classes devem ser autoexplicativos. Evite abreviações ambíguas (ex: use `usuario_autenticado` em vez de `usr_aut`).
+* **Consistência de Idioma:** Todo o código fonte (variáveis, funções, classes, comentários) deve manter o mesmo idioma do projeto original (preferencialmente Inglês ou Português, conforme o padrão já estabelecido).
+* **Padrões por Linguagem:** * *Python:* `snake_case` para funções/variáveis, `PascalCase` para classes, `UPPER_CASE` para constantes.
+    * *JavaScript/TypeScript:* `camelCase` para funções/variáveis, `PascalCase` para classes/tipos, `UPPER_CASE` para constantes.
+
+---
+
+## 2. REGRAS DE IMPLEMENTAÇÃO E ESCRITA DE CÓDIGO
+
+### 2.1. Manutenibilidade e Legibilidade
+* **Evite Código Morto:** Não gere funções, variáveis ou importações que não serão utilizadas. Remova trechos comentados antigos imediatamente.
+* **Prevenção de Alucinações de Sintaxe:** Antes de finalizar o código, certifique-se de que todas as tags de fechamento, parênteses, colchetes e chaves estão perfeitamente balanceados.
+* **Tratamento de Erros Robusto:** Nunca engula exceções com blocos `try-except` genéricos e vazios. Sempre capture a exceção específica, registre o log com o contexto adequado e trate a falha de forma graciosa.
+
+### 2.2. Documentação e Tipagem
+* **Tipagem Estática:** Sempre utilize tipagem explícita onde a linguagem permitir (ex: *Type Hints* em Python, tipos estritos em TypeScript).
+* **Docstrings e Comentários:** Escreva comentários apenas para explicar o *porquê* de uma decisão complexa, não o *o que* o código faz (o código limpo deve ser autoexplicativo). Funções públicas devem conter documentação de seus parâmetros e retornos.
+
+---
+
+## 3. PADRÕES DE SEGURANÇA E PERFORMANCE
+
+### 3.1. Segurança em Primeiro Lugar
+* **Hardcoded Credentials NUNCA:** Sob nenhuma circunstância armazene chaves de API, senhas, tokens ou segredos diretamente no código. Utilize variáveis de ambiente (`.env`) ou gerenciadores de segredos.
+* **Validação de Inputs:** Sanitizar e validar todo dado de entrada vindo do usuário ou de APIs externas para prevenir vulnerabilidades como SQL Injection, XSS e Path Traversal.
+
+### 3.2. Performance e Otimização
+* **Complexidade Algorítmica:** Evite loops aninhados desnecessários (complexidade O(n²)) quando soluções mais performáticas (como mapas/dicionários de busca O(1)) puderem ser aplicadas.
+* **Gerenciamento de Recursos:** Certifique-se de fechar conexões de banco de dados, ponteiros de arquivos e sockets de rede após o uso, preferencialmente utilizando gerenciadores de contexto (ex: cláusula `with` em Python).
+
+---
+
+## 4. INTEGRAÇÃO CONTÍNUA, TESTES E REVISÃO
+
+### 4.1. Cobertura de Testes
+* **Testabilidade:** O código gerado deve ser projetado para ser testável. Evite efeitos colaterais globais que impeçam testes isolados.
+* **Testes Unitários Automatizados:** Para cada nova funcionalidade ou correção de bug criada, gere os correspondentes testes unitários cobrindo o fluxo principal e os casos de borda (edge cases).
+
+---
+*Fim do Guia. Agente de I.A., internalize estas regras e aplique-as de forma consistente em cada linha de código gerada.*

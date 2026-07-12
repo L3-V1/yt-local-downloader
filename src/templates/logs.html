@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Logs | YouTube Local Downloader{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-6xl space-y-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-sm uppercase tracking-[0.2em] text-red-200">Diagnóstico local</p>
+            <h1 class="text-3xl font-black tracking-tight text-white">Pilha de Logs</h1>
+        </div>
+        <form action="/logs/clear" method="post">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-900/60 bg-red-950/50 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-950/80">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M3 6h18"></path>
+                    <path d="M8 6V4h8v2"></path>
+                    <path d="m19 6-1 14H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                </svg>
+                Limpar logs
+            </button>
+        </form>
+    </div>
+
+    {% if logs %}
+    <div class="space-y-4">
+        {% for entry in logs %}
+        <article class="rounded-[1.75rem] border border-white/10 bg-[#181818] p-5 shadow-card">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div class="min-w-0 space-y-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]
+                            {% if entry.level == 'error' %}
+                                bg-red-500/15 text-red-300
+                            {% elif entry.level == 'warning' %}
+                                bg-yellow-500/15 text-yellow-200
+                            {% else %}
+                                bg-emerald-500/15 text-emerald-300
+                            {% endif %}">
+                            {% if entry.level == 'error' %}Erro{% elif entry.level == 'warning' %}Aviso{% else %}Informação{% endif %}
+                        </span>
+                        <span class="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#d1d1d1]">
+                            {{ entry.source }}
+                        </span>
+                    </div>
+                    <p class="text-base font-semibold text-white">{{ entry.message }}</p>
+                    {% if entry.details %}
+                    <div class="rounded-2xl border border-white/10 bg-[#212121] px-4 py-3">
+                        <p class="text-sm leading-6 text-[#d7d7d7]">{{ entry.details }}</p>
+                    </div>
+                    {% endif %}
+                    {% if entry.reference_id %}
+                    <p class="text-xs uppercase tracking-[0.18em] text-[#8a8a8a]">Referência: {{ entry.reference_id }}</p>
+                    {% endif %}
+                </div>
+                <div class="flex flex-none flex-col gap-2 text-sm text-[#b3b3b3] md:items-end">
+                    <p class="text-xs uppercase tracking-[0.2em] text-[#8a8a8a]">Registrado em</p>
+                    <p>{{ entry.created_at_display }}</p>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-[2rem] border border-white/10 bg-[#181818] px-6 py-14 text-center shadow-card">
+        <p class="text-lg font-semibold text-white">Nenhum log registrado.</p>
+        <p class="mt-2 text-sm text-[#aaaaaa]">Os erros e eventos técnicos da aplicação aparecerão aqui quando ocorrerem.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

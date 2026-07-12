@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Biblioteca de Vídeos | YouTube Local Downloader{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-6xl space-y-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-sm uppercase tracking-[0.2em] text-red-200">Arquivos locais</p>
+            <h1 class="text-3xl font-black tracking-tight text-white">Biblioteca de Vídeos</h1>
+        </div>
+        <a href="/" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#212121] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.5-3.5"></path>
+            </svg>
+            Pesquisar mais vídeos
+        </a>
+    </div>
+
+    {% if videos %}
+    <form id="library-batch-form" method="post" class="rounded-[1.75rem] border border-white/10 bg-[#181818] p-4 shadow-card sm:p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label class="inline-flex items-center gap-3 text-sm font-semibold text-white">
+                    <input
+                        id="library-select-all"
+                        type="checkbox"
+                        class="peer sr-only"
+                    >
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-lg border border-white/15 bg-[#212121] text-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition peer-checked:border-yt-red peer-checked:bg-yt-red peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-yt-red/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#181818]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 8.5 6.25 11.5 13 4.5"></path>
+                        </svg>
+                    </span>
+                    Selecionar todos
+                </label>
+                <p class="text-sm text-[#b7b7b7]">
+                    <span id="library-selected-count" class="font-semibold text-white">0</span>
+                    vídeo(s) selecionado(s)
+                </p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                <button
+                    type="submit"
+                    formaction="/library/transfer-batch"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#212121] px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    data-batch-action
+                    disabled
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M12 3v11"></path>
+                        <path d="m7 9 5-5 5 5"></path>
+                        <path d="M5 21h14"></path>
+                    </svg>
+                    Transferir selecionados
+                </button>
+                <button
+                    type="submit"
+                    formaction="/library/delete-batch"
+                    onclick="return confirm('Tem certeza de que deseja excluir os vídeos selecionados da biblioteca?');"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-900/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-950/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    data-batch-action
+                    disabled
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M3 6h18"></path>
+                        <path d="M8 6V4h8v2"></path>
+                        <path d="m19 6-1 14H6L5 6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                    </svg>
+                    Excluir selecionados
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {% for video in videos %}
+        <article class="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#181818] shadow-card">
+            <div class="border-b border-white/10 bg-gradient-to-br from-[#241111] via-[#181818] to-[#101010] p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-xs uppercase tracking-[0.2em] text-red-200">Arquivo local</p>
+                        <button
+                            type="button"
+                            data-rename-trigger
+                            data-file-name="{{ video.file_name }}"
+                            class="mt-2 inline-flex max-w-full items-start gap-2 rounded-2xl text-left text-xl font-bold text-white transition hover:text-red-100"
+                        >
+                            <span class="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-xl border border-white/10 bg-[#212121] text-red-200 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path>
+                                </svg>
+                            </span>
+                            <span class="line-clamp-2 break-words underline decoration-transparent underline-offset-4 transition hover:decoration-current">
+                                {{ video.title }}
+                            </span>
+                        </button>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#d1d1d1]">
+                            {{ video.extension }}
+                        </span>
+                        <label class="inline-flex cursor-pointer items-center">
+                            <input
+                                type="checkbox"
+                                name="file_names"
+                                value="{{ video.file_name }}"
+                                form="library-batch-form"
+                                class="library-video-checkbox peer sr-only"
+                                aria-label="Selecionar {{ video.title }}"
+                            >
+                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-lg border border-white/15 bg-[#212121] text-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/25 peer-checked:border-yt-red peer-checked:bg-yt-red peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-yt-red/40 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#181818]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 8.5 6.25 11.5 13 4.5"></path>
+                                </svg>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-1 flex-col gap-5 p-5">
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-[#212121] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-[#8a8a8a]">Tamanho</p>
+                        <p class="mt-2 text-sm font-semibold text-white">{{ video.size_display }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-[#212121] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-[#8a8a8a]">Duração</p>
+                        <p class="mt-2 text-sm font-semibold text-white">{{ video.duration_display }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-[#212121] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-[#8a8a8a]">Resolução</p>
+                        <p class="mt-2 text-sm font-semibold text-white">{{ video.resolution }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-[#212121] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-[#8a8a8a]">Modificado em</p>
+                        <p class="mt-2 text-sm font-semibold text-white">{{ video.modified_at }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-auto space-y-3">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <form action="/library/open" method="post">
+                            <input type="hidden" name="file_name" value="{{ video.file_name }}">
+                            <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yt-red px-4 py-3 text-sm font-bold text-white transition hover:bg-yt-red-dark">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="m8 5 11 7-11 7V5Z"></path>
+                                </svg>
+                                Reproduzir
+                            </button>
+                        </form>
+                        <form action="/library/delete" method="post" onsubmit="return confirm('Tem certeza de que deseja excluir este vídeo da biblioteca?');">
+                            <input type="hidden" name="file_name" value="{{ video.file_name }}">
+                            <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-900/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-950/80">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="m19 6-1 14H6L5 6"></path>
+                                    <path d="M10 11v6"></path>
+                                    <path d="M14 11v6"></path>
+                                </svg>
+                                Excluir
+                            </button>
+                        </form>
+                    </div>
+                    <form action="/library/transfer" method="post">
+                        <input type="hidden" name="file_name" value="{{ video.file_name }}">
+                        <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#212121] px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M12 3v11"></path>
+                                <path d="m7 9 5-5 5 5"></path>
+                                <path d="M5 21h14"></path>
+                            </svg>
+                            Transferir
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-[2rem] border border-white/10 bg-[#181818] px-6 py-14 text-center shadow-card">
+        <p class="text-lg font-semibold text-white">Nenhum vídeo encontrado na biblioteca.</p>
+        <p class="mt-2 text-sm text-[#aaaaaa]">Quando um download for concluído, ele aparecerá aqui automaticamente.</p>
+    </div>
+    {% endif %}
+</section>
+
+<div id="renameModal" class="fixed inset-0 z-50 hidden">
+    <div id="renameModalOverlay" class="absolute inset-0 bg-black/75"></div>
+    <div class="relative flex min-h-full items-center justify-center px-4 py-8">
+        <div class="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[#181818] p-6 shadow-card sm:p-8">
+            <div class="flex items-start justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm uppercase tracking-[0.2em] text-red-200">Renomear arquivo</p>
+                    <h2 class="text-2xl font-black tracking-tight text-white">Defina um novo nome para o vídeo</h2>
+                    <p class="text-sm leading-6 text-[#b3b3b3]">
+                        A extensão atual será mantida automaticamente se você não digitá-la.
+                    </p>
+                </div>
+                <button id="renameModalClose" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#212121] text-white transition hover:bg-white/10" aria-label="Fechar modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="m6 6 12 12"></path>
+                        <path d="M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form action="/library/rename" method="post" class="mt-8 space-y-5">
+                <input id="renameModalCurrentFileName" type="hidden" name="file_name" value="">
+
+                <label class="block space-y-2">
+                    <span class="text-sm font-semibold text-white">Nome do arquivo</span>
+                    <input
+                        id="renameModalNewFileName"
+                        type="text"
+                        name="new_file_name"
+                        required
+                        class="min-h-[56px] w-full rounded-2xl border border-white/10 bg-[#212121] px-5 text-base text-white outline-none ring-0 placeholder:text-[#8a8a8a] focus:border-yt-red"
+                    >
+                </label>
+
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button id="renameModalCancel" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#212121] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-yt-red px-5 py-3 text-sm font-bold text-white transition hover:bg-yt-red-dark">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M19 21H5"></path>
+                            <path d="M5 21V7l5-4h9v18"></path>
+                            <path d="M9 10h6"></path>
+                        </svg>
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if videos %}
+<script>
+    const librarySelectAll = document.getElementById("library-select-all");
+    const librarySelectedCount = document.getElementById("library-selected-count");
+    const libraryCheckboxes = Array.from(document.querySelectorAll(".library-video-checkbox"));
+    const libraryBatchButtons = Array.from(document.querySelectorAll("[data-batch-action]"));
+    const renameModal = document.getElementById("renameModal");
+    const renameModalOverlay = document.getElementById("renameModalOverlay");
+    const renameModalClose = document.getElementById("renameModalClose");
+    const renameModalCancel = document.getElementById("renameModalCancel");
+    const renameModalCurrentFileName = document.getElementById("renameModalCurrentFileName");
+    const renameModalNewFileName = document.getElementById("renameModalNewFileName");
+    const renameTriggers = Array.from(document.querySelectorAll("[data-rename-trigger]"));
+
+    function syncLibrarySelectionState() {
+        const selectedCount = libraryCheckboxes.filter((checkbox) => checkbox.checked).length;
+        const allSelected = selectedCount > 0 && selectedCount === libraryCheckboxes.length;
+
+        if (librarySelectedCount) {
+            librarySelectedCount.textContent = String(selectedCount);
+        }
+
+        if (librarySelectAll) {
+            librarySelectAll.checked = allSelected;
+            librarySelectAll.indeterminate = selectedCount > 0 && !allSelected;
+        }
+
+        libraryBatchButtons.forEach((button) => {
+            button.disabled = selectedCount === 0;
+        });
+    }
+
+    function openRenameModal(fileName) {
+        if (!renameModal || !renameModalCurrentFileName || !renameModalNewFileName) {
+            return;
+        }
+
+        renameModalCurrentFileName.value = fileName;
+        renameModalNewFileName.value = fileName;
+        renameModal.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+        window.setTimeout(() => {
+            renameModalNewFileName.focus();
+            renameModalNewFileName.select();
+        }, 0);
+    }
+
+    function closeRenameModal() {
+        if (!renameModal) {
+            return;
+        }
+
+        renameModal.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+    }
+
+    if (librarySelectAll) {
+        librarySelectAll.addEventListener("change", () => {
+            libraryCheckboxes.forEach((checkbox) => {
+                checkbox.checked = librarySelectAll.checked;
+            });
+            syncLibrarySelectionState();
+        });
+    }
+
+    libraryCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", syncLibrarySelectionState);
+    });
+
+    renameTriggers.forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+            openRenameModal(trigger.dataset.fileName || "");
+        });
+    });
+
+    if (renameModalOverlay) {
+        renameModalOverlay.addEventListener("click", closeRenameModal);
+    }
+
+    if (renameModalClose) {
+        renameModalClose.addEventListener("click", closeRenameModal);
+    }
+
+    if (renameModalCancel) {
+        renameModalCancel.addEventListener("click", closeRenameModal);
+    }
+
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeRenameModal();
+        }
+    });
+
+    syncLibrarySelectionState();
+</script>
+{% endif %}
+{% endblock %}
