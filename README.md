@@ -1,25 +1,27 @@
 # YouTube Local Downloader
 
-Miniaplicação web local em FastAPI para pesquisar vídeos públicos do YouTube e iniciar downloads locais autorizados com `yt-dlp`.
+Miniaplicacao web local em FastAPI para pesquisar videos publicos do YouTube e iniciar downloads locais autorizados com `yt-dlp`.
 
 ## Requisitos
 
 - Windows
 - Python 3.11+ instalado
 - Node.js 22+ ou Deno instalado para compatibilidade atual com YouTube no `yt-dlp`
-- Acesso à internet para pesquisar vídeos públicos e baixar dependências
+- Acesso a internet para pesquisar videos publicos e baixar dependencias
 
 ## Estrutura do projeto
 
 ```text
 .
-├─ main.py
-├─ requirements.txt
-├─ src/
-│  ├─ services/
-│  └─ templates/
-├─ downloads/
-└─ tests/
+|-- main.py
+|-- requirements.txt
+|-- src/
+|   |-- controllers/
+|   |-- routes/
+|   |-- services/
+|   `-- templates/
+|-- downloads/
+`-- tests/
 ```
 
 ## 1. Criar e ativar o ambiente virtual
@@ -31,13 +33,13 @@ python -m venv .env
 .\.env\Scripts\Activate.ps1
 ```
 
-Se a pasta `.env` já existir, basta ativar:
+Se a pasta `.env` ja existir, basta ativar:
 
 ```powershell
 .\.env\Scripts\Activate.ps1
 ```
 
-## 2. Instalar as dependências
+## 2. Instalar as dependencias
 
 Com o ambiente virtual ativo:
 
@@ -46,12 +48,12 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Observação:
+Observacoes:
 
 - O projeto usa `yt-dlp[default]`, que instala o pacote complementar `yt-dlp-ejs`.
-- Para YouTube, o `yt-dlp` também precisa de um runtime JavaScript suportado. Neste projeto, `node` é usado automaticamente quando estiver disponível no `PATH`.
+- Para YouTube, o `yt-dlp` tambem precisa de um runtime JavaScript suportado. Neste projeto, `node` e usado automaticamente quando estiver disponivel no `PATH`.
 
-## 3. Rodar a aplicação
+## 3. Rodar a aplicacao
 
 Ainda na raiz do projeto:
 
@@ -59,7 +61,7 @@ Ainda na raiz do projeto:
 uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
 
-Ou, se preferir usar a configuração padrão do projeto:
+Ou, se preferir usar a configuracao padrao do projeto:
 
 ```powershell
 python main.py
@@ -73,14 +75,15 @@ http://localhost:5000
 
 ## 4. Como usar
 
-1. Acesse a página inicial.
-2. Digite um termo de pesquisa.
+1. Acesse a pagina inicial.
+2. Digite um termo de pesquisa ou cole uma URL publica do YouTube.
 3. Clique em `Pesquisar`.
-4. Escolha um resultado público/autorizado.
-5. Clique em `Baixar Vídeo`.
-6. Acompanhe o status em `Histórico de Downloads`.
+4. Escolha um resultado publico/autorizado.
+5. Clique em `Baixar Video`.
+6. Acompanhe o status em `Historico de Downloads`.
+7. Consulte a `Biblioteca de Videos` para reproduzir, transferir, renomear ou excluir arquivos locais.
 
-Os arquivos baixados são salvos na pasta local `downloads/`.
+Os arquivos baixados sao salvos na pasta local `downloads/`.
 
 ## 5. Rodar os testes
 
@@ -88,10 +91,40 @@ Os arquivos baixados são salvos na pasta local `downloads/`.
 python -m pytest -q
 ```
 
-## 6. Observações importantes
+## 6. Executar com Docker
+
+O arquivo `docker-compose.yml` esta configurado para usar uma imagem ja criada localmente.
+
+Primeiro, gere a imagem:
+
+```powershell
+docker build -t youtube-local-downloader:latest .
+```
+
+Depois suba o conteiner:
+
+```powershell
+docker compose up -d
+```
+
+A aplicacao ficara disponivel em:
+
+```text
+http://localhost:5000
+```
+
+Os videos baixados ficam persistidos no volume `downloads_data`.
+
+Para encerrar:
+
+```powershell
+docker compose down
+```
+
+## 7. Observacoes importantes
 
 - O projeto foi pensado para uso local em `http://localhost:5000`.
-- Se o `uvicorn` for executado sem `--port`, ele continuará usando a porta padrão dele, que é `8000`.
-- Não há autenticação, login, cookies ou tokens.
-- O download deve ser usado apenas para conteúdos públicos e autorizados.
-- O sistema não tenta contornar DRM, paywall, login ou restrições de acesso.
+- Se o `uvicorn` for executado sem `--port`, ele continuara usando a porta padrao dele, que e `8000`.
+- Nao ha autenticacao, login, cookies ou tokens.
+- O download deve ser usado apenas para conteudos publicos e autorizados.
+- O sistema nao tenta contornar DRM, paywall, login ou restricoes de acesso.
