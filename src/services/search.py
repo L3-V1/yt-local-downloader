@@ -22,6 +22,7 @@ LOGGER = logging.getLogger(__name__)
 class SearchResult(TypedDict):
     title: str
     channel: str
+    duration_display: str
     url: str
     thumbnail: str
 
@@ -163,6 +164,7 @@ def _normalize_entry(entry: dict[str, Any], *, fallback_url: str = "") -> Search
             or entry.get("uploader_id")
             or "Canal desconhecido"
         ),
+        "duration_display": _build_duration_display(entry),
         "url": webpage_url,
         "thumbnail": _build_thumbnail_url(video_id, entry),
     }
@@ -183,6 +185,27 @@ def _build_thumbnail_url(video_id: str, entry: dict[str, Any]) -> str:
     if not video_id:
         return "https://placehold.co/640x360/212121/ffffff?text=Sem+Thumbnail"
     return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+
+
+def _build_duration_display(entry: dict[str, Any]) -> str:
+    duration_string = str(entry.get("duration_string") or "").strip()
+    if duration_string:
+        return duration_string
+
+    raw_duration = entry.get("duration")
+    if isinstance(raw_duration, bool) or raw_duration is None:
+        return "Não informado"
+
+    try:
+        total_seconds = int(float(raw_duration))
+    except (TypeError, ValueError):
+        return "Não informado"
+
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes:02d}:{seconds:02d}"
 
 
 def _is_supported_youtube_url(value: str) -> bool:

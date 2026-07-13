@@ -26,11 +26,13 @@ class DummyYoutubeDL:
                     "id": "abc123",
                     "title": "FastAPI Tutorial",
                     "channel": "Open Channel",
+                    "duration": 125,
                 },
                 {
                     "id": "def456",
                     "title": "FastAPI Course",
                     "channel": "Dev Channel",
+                    "duration_string": "01:30:00",
                 },
             ]
         }
@@ -72,6 +74,7 @@ class DummyYoutubeDLDirectVideo:
             "id": "abc123",
             "title": "Vídeo direto",
             "channel": "Canal direto",
+            "duration": 93,
             "thumbnail": "https://img.youtube.com/direct.jpg",
             "url": "https://www.youtube.com/watch?v=abc123",
         }
@@ -86,12 +89,14 @@ def test_search_videos_returns_paginated_entries(monkeypatch):
         {
             "title": "FastAPI Tutorial",
             "channel": "Open Channel",
+            "duration_display": "02:05",
             "url": "https://www.youtube.com/watch?v=abc123",
             "thumbnail": "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
         },
         {
             "title": "FastAPI Course",
             "channel": "Dev Channel",
+            "duration_display": "01:30:00",
             "url": "https://www.youtube.com/watch?v=def456",
             "thumbnail": "https://i.ytimg.com/vi/def456/hqdefault.jpg",
         },
@@ -120,6 +125,7 @@ def test_search_videos_accepts_direct_youtube_url(monkeypatch):
         {
             "title": "Vídeo direto",
             "channel": "Canal direto",
+            "duration_display": "01:33",
             "url": "https://www.youtube.com/watch?v=abc123",
             "thumbnail": "https://img.youtube.com/direct.jpg",
         }
@@ -140,6 +146,20 @@ def test_search_videos_rejects_empty_query():
 def test_normalize_entries_skips_invalid_urls():
     results = _normalize_entries([{"title": "No URL"}])
     assert results == []
+
+
+def test_normalize_entries_defaults_missing_duration():
+    results = _normalize_entries([{"id": "abc123", "title": "Vídeo", "channel": "Canal"}])
+
+    assert results == [
+        {
+            "title": "Vídeo",
+            "channel": "Canal",
+            "duration_display": "Não informado",
+            "url": "https://www.youtube.com/watch?v=abc123",
+            "thumbnail": "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
+        }
+    ]
 
 
 def test_is_supported_youtube_url_detects_watch_url():

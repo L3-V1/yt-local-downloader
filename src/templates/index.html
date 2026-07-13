@@ -53,7 +53,14 @@
                 <div class="space-y-4 p-5">
                     <div class="space-y-2">
                         <h3 class="line-clamp-2 text-lg font-semibold text-white">{{ video.title }}</h3>
-                        <p class="text-sm text-[#b3b3b3]">{{ video.channel }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex max-w-full items-center rounded-full border border-white/10 bg-[#212121] px-3 py-1 text-xs font-medium text-[#c8c8c8]">
+                                <span class="truncate">{{ video.channel }}</span>
+                            </span>
+                            <span class="inline-flex items-center rounded-full border border-white/10 bg-[#212121] px-3 py-1 text-xs font-medium text-[#c8c8c8]">
+                                {{ video.duration_display }}
+                            </span>
+                        </div>
                         <a href="{{ video.url }}" target="_blank" rel="noopener noreferrer" class="inline-block break-all text-sm text-red-200 hover:text-red-100">
                             {{ video.url }}
                         </a>

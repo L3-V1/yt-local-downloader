@@ -117,6 +117,7 @@ def _deserialize_accumulated_results(raw_payload: str) -> list[SearchResult]:
             continue
         title = str(item.get("title") or "").strip()
         channel = str(item.get("channel") or "").strip()
+        duration_display = str(item.get("duration_display") or "").strip()
         url = str(item.get("url") or "").strip()
         thumbnail = str(item.get("thumbnail") or "").strip()
         if not title or not url:
@@ -125,6 +126,7 @@ def _deserialize_accumulated_results(raw_payload: str) -> list[SearchResult]:
             {
                 "title": title,
                 "channel": channel or "Canal desconhecido",
+                "duration_display": duration_display or "Não informado",
                 "url": url,
                 "thumbnail": thumbnail or "https://placehold.co/640x360/212121/ffffff?text=Sem+Thumbnail",
             }
