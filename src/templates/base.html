@@ -182,6 +182,8 @@
         const sidebar = document.getElementById("sidebar");
         const overlay = document.getElementById("sidebarOverlay");
         const menuButton = document.getElementById("menuButton");
+        const validationFieldBaseClass = "border-white/10";
+        const validationFieldErrorClass = "border-yt-red ring-2 ring-yt-red/20";
 
         function openSidebar() {
             sidebar.classList.remove("-translate-x-full");
@@ -239,6 +241,107 @@
                 flashMessage.remove();
             });
         }
+
+        function getFieldErrorElement(field) {
+            const container = field.closest("label") || field.parentElement;
+            if (!container) {
+                return null;
+            }
+
+            let errorElement = container.querySelector("[data-field-error]");
+            if (errorElement) {
+                return errorElement;
+            }
+
+            errorElement = document.createElement("p");
+            errorElement.setAttribute("data-field-error", "true");
+            errorElement.className = "mt-2 hidden text-sm font-medium text-red-200";
+            container.appendChild(errorElement);
+            return errorElement;
+        }
+
+        function setFieldError(field, message) {
+            const errorElement = getFieldErrorElement(field);
+            field.classList.remove(validationFieldBaseClass);
+            field.classList.add(...validationFieldErrorClass.split(" "));
+            field.setAttribute("aria-invalid", "true");
+
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove("hidden");
+            }
+        }
+
+        function clearFieldError(field) {
+            const errorElement = getFieldErrorElement(field);
+            field.classList.remove(...validationFieldErrorClass.split(" "));
+            field.classList.add(validationFieldBaseClass);
+            field.removeAttribute("aria-invalid");
+
+            if (errorElement) {
+                errorElement.textContent = "";
+                errorElement.classList.add("hidden");
+            }
+        }
+
+        function getValidationMessage(field) {
+            const value = field.value.trim();
+
+            if (field.hasAttribute("required") && !value) {
+                return field.dataset.errorMessageRequired || "Preencha este campo.";
+            }
+
+            if (field.maxLength > 0 && value.length > field.maxLength) {
+                return field.dataset.errorMessageTooLong || `Use no máximo ${field.maxLength} caracteres.`;
+            }
+
+            return "";
+        }
+
+        function validateField(field) {
+            const message = getValidationMessage(field);
+            if (message) {
+                setFieldError(field, message);
+                return false;
+            }
+
+            clearFieldError(field);
+            return true;
+        }
+
+        function registerValidatedForm(form) {
+            const fields = Array.from(form.querySelectorAll("[data-validate-field]"));
+            if (!fields.length) {
+                return;
+            }
+
+            form.setAttribute("novalidate", "novalidate");
+
+            fields.forEach((field) => {
+                field.addEventListener("input", () => validateField(field));
+                field.addEventListener("blur", () => validateField(field));
+            });
+
+            form.addEventListener("submit", (event) => {
+                let firstInvalidField = null;
+
+                for (const field of fields) {
+                    const isValid = validateField(field);
+                    if (!isValid && !firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                }
+
+                if (firstInvalidField) {
+                    event.preventDefault();
+                    firstInvalidField.focus();
+                }
+            });
+        }
+
+        document.querySelectorAll("[data-validate-form]").forEach((form) => {
+            registerValidatedForm(form);
+        });
     </script>
 </body>
 </html>
