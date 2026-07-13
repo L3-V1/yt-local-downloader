@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TypedDict
+from typing import Any, Iterable, TypedDict, cast
 from urllib.parse import urlparse
 
 from yt_dlp import YoutubeDL
@@ -62,8 +62,8 @@ def _search_by_term(query: str, page: int, page_size: int) -> SearchPage:
     fetch_count = page * page_size + 1
 
     try:
-        with YoutubeDL(_build_ydl_options()) as ydl:
-            raw_result = ydl.extract_info(f"ytsearch{fetch_count}:{query}", download=False)
+        with YoutubeDL(cast(Any, _build_ydl_options())) as ydl:
+            raw_result = cast(dict[str, Any], ydl.extract_info(f"ytsearch{fetch_count}:{query}", download=False))
     except DownloadError as exc:
         LOGGER.warning("yt-dlp search failed for query=%r page=%s: %s", query, page, exc)
         raise SearchServiceError("Não foi possível buscar vídeos agora. Tente novamente em instantes.") from exc
@@ -84,8 +84,8 @@ def _search_by_term(query: str, page: int, page_size: int) -> SearchPage:
 
 def _search_direct_video(video_url: str) -> SearchPage:
     try:
-        with YoutubeDL(_build_ydl_options()) as ydl:
-            raw_result = ydl.extract_info(video_url, download=False)
+        with YoutubeDL(cast(Any, _build_ydl_options())) as ydl:
+            raw_result = cast(dict[str, Any], ydl.extract_info(video_url, download=False))
     except DownloadError as exc:
         LOGGER.warning("yt-dlp direct lookup failed for url=%r: %s", video_url, exc)
         raise SearchServiceError("Não foi possível carregar esse vídeo do YouTube agora. Tente novamente em instantes.") from exc
@@ -129,7 +129,7 @@ def _validate_page_size(page_size: int) -> int:
     return page_size
 
 
-def _normalize_entries(entries: list[dict[str, Any]]) -> list[SearchResult]:
+def _normalize_entries(entries: Iterable[dict[str, Any]]) -> list[SearchResult]:
     results: list[SearchResult] = []
 
     for entry in entries:

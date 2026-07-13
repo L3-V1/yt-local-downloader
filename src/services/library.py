@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import shutil
+import mimetypes
 import subprocess
+import tempfile
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import BinaryIO, TypedDict
+
+from mutagen import File as MutagenFile
 
 from src.services.download import DOWNLOADS_DIR
 from src.services.yt_dlp import build_subprocess_env, find_executable
@@ -34,6 +38,14 @@ class VideoLibraryItem:
     audio_codec: str
 
 
+class Mp4Box(TypedDict):
+    type: str
+    start: int
+    end: int
+    data_offset: int
+    data_end: int
+
+
 def list_downloaded_videos() -> list[VideoLibraryItem]:
     """List downloaded media files from the local downloads directory.
 
@@ -51,18 +63,16 @@ def list_downloaded_videos() -> list[VideoLibraryItem]:
     return items
 
 
-def open_video_file(file_name: str) -> None:
-    """Open a downloaded media file with the default local player.
+def open_video_file(file_name: str) -> Path:
+    """Resolve a downloaded media file for browser playback or download.
 
     Args:
         file_name: Name of the file stored inside the local downloads directory.
+
+    Returns:
+        The validated file path that can be streamed by the HTTP layer.
     """
-    file_path = _resolve_download_file(file_name)
-    try:
-        os.startfile(file_path)  # type: ignore[attr-defined]
-    except OSError as exc:
-        LOGGER.warning("Failed to open library video file=%s: %s", file_path.name, exc)
-        raise LibraryServiceError("Não foi possível abrir o vídeo selecionado.") from exc
+    return _resolve_download_file(file_name)
 
 
 def delete_video_file(file_name: str) -> None:
@@ -107,40 +117,27 @@ def rename_video_file(file_name: str, new_file_name: str) -> Path:
 
 
 def transfer_video_file(file_name: str) -> Path:
-    """Move a downloaded media file to a user-selected directory.
+    """Resolve a downloaded media file for HTTP download transfer.
 
     Args:
         file_name: Name of the file stored inside the local downloads directory.
 
     Returns:
-        The final destination path used for the moved file.
+        The validated file path that can be returned as an attachment.
     """
-    file_path = _resolve_download_file(file_name)
-    target_directory = _select_transfer_directory()
-    destination_path = _build_transfer_destination_path(file_path, target_directory)
-    _move_resolved_file(file_path, destination_path)
-    return destination_path
+    return _resolve_download_file(file_name)
 
 
 def transfer_video_files(file_names: list[str]) -> list[Path]:
-    """Move multiple downloaded media files to a user-selected directory.
+    """Resolve multiple downloaded media files for HTTP download transfer.
 
     Args:
         file_names: Selected file names from the local downloads directory.
 
     Returns:
-        The final destination paths used for the moved files.
+        The validated file paths that can be bundled for download.
     """
-    resolved_files = _resolve_download_files(file_names)
-    target_directory = _select_transfer_directory()
-    destination_paths = _build_transfer_destination_paths(resolved_files, target_directory)
-
-    moved_paths: list[Path] = []
-    for source_file_path, destination_path in zip(resolved_files, destination_paths):
-        _move_resolved_file(source_file_path, destination_path)
-        moved_paths.append(destination_path)
-
-    return moved_paths
+    return _resolve_download_files(file_names)
 
 
 def _resolve_download_file(file_name: str) -> Path:
@@ -181,34 +178,25 @@ def _normalize_file_names(file_names: list[str]) -> list[str]:
     return normalized_names
 
 
-def _select_transfer_directory() -> Path:
+def get_video_media_type(file_path: Path) -> str:
+    media_type, _ = mimetypes.guess_type(file_path.name)
+    return media_type or "application/octet-stream"
+
+
+def build_transfer_archive(file_paths: list[Path]) -> Path:
+    """Create a temporary zip archive for batch transfer downloads."""
     try:
-        import tkinter as tk
-        from tkinter import TclError, filedialog
-    except ImportError as exc:  # pragma: no cover - depends on local GUI support
-        raise LibraryServiceError("O seletor de diretório não está disponível neste ambiente.") from exc
+        with tempfile.NamedTemporaryFile(prefix="yt-library-transfer-", suffix=".zip", delete=False) as temp_file:
+            archive_path = Path(temp_file.name)
 
-    try:
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        try:
-            selected_directory = filedialog.askdirectory(
-                title="Selecione o diretório de destino para transferir os vídeos"
-            )
-        finally:
-            root.destroy()
-    except TclError as exc:  # pragma: no cover - depends on local GUI support
-        raise LibraryServiceError("O seletor de diretório não pôde ser aberto neste ambiente.") from exc
+        with zipfile.ZipFile(archive_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive_file:
+            for file_path in file_paths:
+                archive_file.write(file_path, arcname=file_path.name)
+    except OSError as exc:
+        LOGGER.warning("Failed to build transfer archive for %s files: %s", len(file_paths), exc)
+        raise LibraryServiceError("Não foi possível preparar os vídeos selecionados para transferência.") from exc
 
-    if not selected_directory:
-        raise LibraryServiceError("Nenhum diretório foi selecionado para a transferência.")
-
-    target_directory = Path(selected_directory).expanduser().resolve()
-    if not target_directory.exists() or not target_directory.is_dir():
-        raise LibraryServiceError("O diretório selecionado não é válido para a transferência.")
-
-    return target_directory
+    return archive_path
 
 
 def _build_renamed_file_path(source_file_path: Path, raw_new_file_name: str) -> Path:
@@ -252,19 +240,6 @@ def _delete_resolved_file(file_path: Path) -> None:
         raise LibraryServiceError("Não foi possível remover o vídeo selecionado.") from exc
 
 
-def _move_resolved_file(source_file_path: Path, destination_path: Path) -> None:
-    try:
-        shutil.move(str(source_file_path), str(destination_path))
-    except OSError as exc:
-        LOGGER.warning(
-            "Failed to transfer library video source=%s destination=%s: %s",
-            source_file_path.name,
-            destination_path,
-            exc,
-        )
-        raise LibraryServiceError("Não foi possível transferir o vídeo selecionado.") from exc
-
-
 def _rename_resolved_file(source_file_path: Path, destination_path: Path) -> None:
     try:
         source_file_path.rename(destination_path)
@@ -276,64 +251,6 @@ def _rename_resolved_file(source_file_path: Path, destination_path: Path) -> Non
             exc,
         )
         raise LibraryServiceError("Não foi possível renomear o vídeo selecionado.") from exc
-
-
-def _build_transfer_destination_path(source_file_path: Path, target_directory: Path) -> Path:
-    destination_path = target_directory / source_file_path.name
-    if destination_path.resolve() == source_file_path.resolve():
-        raise LibraryServiceError("O arquivo já está no diretório selecionado.")
-
-    if not destination_path.exists():
-        return destination_path
-
-    stem = destination_path.stem
-    suffix = destination_path.suffix
-
-    for index in range(1, 1_000):
-        candidate = target_directory / f"{stem} ({index}){suffix}"
-        if not candidate.exists():
-            return candidate
-
-    raise LibraryServiceError("Não foi possível definir um nome de destino livre para a transferência.")
-
-
-def _build_transfer_destination_paths(source_file_paths: list[Path], target_directory: Path) -> list[Path]:
-    reserved_names = {item.name for item in target_directory.iterdir()}
-    destination_paths: list[Path] = []
-
-    for source_file_path in source_file_paths:
-        destination_path = _build_reserved_transfer_destination_path(
-            source_file_path,
-            target_directory,
-            reserved_names,
-        )
-        reserved_names.add(destination_path.name)
-        destination_paths.append(destination_path)
-
-    return destination_paths
-
-
-def _build_reserved_transfer_destination_path(
-    source_file_path: Path,
-    target_directory: Path,
-    reserved_names: set[str],
-) -> Path:
-    base_destination_path = target_directory / source_file_path.name
-    if base_destination_path.resolve() == source_file_path.resolve():
-        raise LibraryServiceError("Um dos arquivos selecionados já está no diretório de destino.")
-
-    if source_file_path.name not in reserved_names:
-        return base_destination_path
-
-    stem = base_destination_path.stem
-    suffix = base_destination_path.suffix
-
-    for index in range(1, 1_000):
-        candidate_name = f"{stem} ({index}){suffix}"
-        if candidate_name not in reserved_names:
-            return target_directory / candidate_name
-
-    raise LibraryServiceError("Não foi possível definir nomes de destino livres para a transferência.")
 
 
 def _build_library_item(file_path: Path) -> VideoLibraryItem:
@@ -357,7 +274,7 @@ def _build_library_item(file_path: Path) -> VideoLibraryItem:
 def _probe_media_metadata(file_path: Path) -> dict[str, str]:
     ffprobe_executable = find_executable("ffprobe")
     if ffprobe_executable is None:
-        return _empty_media_metadata()
+        return _probe_media_metadata_without_ffprobe(file_path)
 
     command = [
         ffprobe_executable,
@@ -380,7 +297,7 @@ def _probe_media_metadata(file_path: Path) -> dict[str, str]:
         )
     except OSError as exc:
         LOGGER.warning("ffprobe execution failed for file=%s: %s", file_path.name, exc)
-        return _empty_media_metadata()
+        return _probe_media_metadata_without_ffprobe(file_path)
 
     if completed_process.returncode != 0 or not completed_process.stdout.strip():
         LOGGER.debug(
@@ -388,13 +305,13 @@ def _probe_media_metadata(file_path: Path) -> dict[str, str]:
             file_path.name,
             completed_process.returncode,
         )
-        return _empty_media_metadata()
+        return _probe_media_metadata_without_ffprobe(file_path)
 
     try:
         payload = json.loads(completed_process.stdout)
     except json.JSONDecodeError as exc:
         LOGGER.warning("ffprobe returned invalid JSON for file=%s: %s", file_path.name, exc)
-        return _empty_media_metadata()
+        return _probe_media_metadata_without_ffprobe(file_path)
 
     streams = payload.get("streams", [])
     format_data = payload.get("format", {})
@@ -414,13 +331,189 @@ def _probe_media_metadata(file_path: Path) -> dict[str, str]:
     }
 
 
-def _empty_media_metadata() -> dict[str, str]:
+def _probe_media_metadata_without_ffprobe(file_path: Path) -> dict[str, str]:
+    duration_seconds = _probe_duration_with_mutagen(file_path)
+    if duration_seconds is None:
+        duration_seconds = _probe_mp4_duration(file_path)
+    width, height = _probe_mp4_resolution(file_path)
+
     return {
-        "duration_display": "Não informado",
-        "resolution": "Não informado",
+        "duration_display": _format_duration(duration_seconds),
+        "resolution": f"{width}x{height}" if width and height else "Não informado",
         "video_codec": "Não informado",
         "audio_codec": "Não informado",
     }
+
+
+def _probe_duration_with_mutagen(file_path: Path) -> float | None:
+    try:
+        media_file = MutagenFile(file_path)
+    except OSError as exc:
+        LOGGER.warning("Mutagen failed to read metadata for file=%s: %s", file_path.name, exc)
+        return None
+
+    if media_file is None or getattr(media_file, "info", None) is None:
+        return None
+
+    raw_length = getattr(media_file.info, "length", None)
+    try:
+        return float(raw_length) if raw_length is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _probe_mp4_resolution(file_path: Path) -> tuple[int | None, int | None]:
+    if file_path.suffix.lower() not in {".mp4", ".m4a", ".mov"}:
+        return (None, None)
+
+    try:
+        with file_path.open("rb") as media_file:
+            return _extract_mp4_resolution(media_file)
+    except OSError as exc:
+        LOGGER.warning("Failed to inspect MP4 boxes for file=%s: %s", file_path.name, exc)
+        return (None, None)
+
+
+def _probe_mp4_duration(file_path: Path) -> float | None:
+    if file_path.suffix.lower() not in {".mp4", ".m4a", ".mov"}:
+        return None
+
+    try:
+        with file_path.open("rb") as media_file:
+            return _extract_mp4_duration(media_file)
+    except OSError as exc:
+        LOGGER.warning("Failed to inspect MP4 duration boxes for file=%s: %s", file_path.name, exc)
+        return None
+
+
+def _extract_mp4_duration(media_file: BinaryIO) -> float | None:
+    moov_children = _find_mp4_box_children(media_file, ("moov",))
+    mvhd_box = next((box for box in moov_children if box["type"] == "mvhd"), None)
+    if mvhd_box is None:
+        return None
+
+    media_file.seek(int(mvhd_box["data_offset"]))
+    payload = media_file.read(int(mvhd_box["data_end"]) - int(mvhd_box["data_offset"]))
+    if len(payload) < 20:
+        return None
+
+    version = payload[0]
+    if version == 1:
+        if len(payload) < 32:
+            return None
+        timescale = int.from_bytes(payload[20:24], "big")
+        duration = int.from_bytes(payload[24:32], "big")
+    else:
+        timescale = int.from_bytes(payload[12:16], "big")
+        duration = int.from_bytes(payload[16:20], "big")
+
+    if timescale <= 0 or duration <= 0:
+        return None
+
+    return duration / timescale
+
+
+def _extract_mp4_resolution(media_file: BinaryIO) -> tuple[int | None, int | None]:
+    moov_children = _find_mp4_box_children(media_file, ("moov",))
+    if not moov_children:
+        return (None, None)
+
+    for trak_box in moov_children:
+        if trak_box["type"] != "trak":
+            continue
+        track_children = _read_mp4_box_children(media_file, trak_box["data_offset"], trak_box["data_end"])
+        if _read_mp4_handler_type(media_file, track_children) != "vide":
+            continue
+
+        width, height = _read_mp4_tkhd_resolution(media_file, track_children)
+        if width and height:
+            return (width, height)
+
+    return (None, None)
+
+
+def _find_mp4_box_children(media_file: BinaryIO, path: tuple[str, ...]) -> list[Mp4Box]:
+    file_end = media_file.seek(0, 2)
+    children = _read_mp4_box_children(media_file, 0, file_end)
+    media_file.seek(0)
+
+    for box_type in path:
+        matching_box = next((box for box in children if box["type"] == box_type), None)
+        if matching_box is None:
+            return []
+        children = _read_mp4_box_children(media_file, matching_box["data_offset"], matching_box["data_end"])
+
+    return children
+
+
+def _read_mp4_box_children(media_file: BinaryIO, start: int, end: int) -> list[Mp4Box]:
+    children: list[Mp4Box] = []
+    cursor = start
+
+    while cursor + 8 <= end:
+        media_file.seek(cursor)
+        header = media_file.read(8)
+        if len(header) < 8:
+            break
+
+        size = int.from_bytes(header[:4], "big")
+        box_type = header[4:8].decode("latin-1")
+        header_size = 8
+
+        if size == 1:
+            extended_size = media_file.read(8)
+            if len(extended_size) < 8:
+                break
+            size = int.from_bytes(extended_size, "big")
+            header_size = 16
+        elif size == 0:
+            size = end - cursor
+
+        if size < header_size:
+            break
+
+        box_end = min(cursor + size, end)
+        children.append(
+            {
+                "type": box_type,
+                "start": cursor,
+                "end": box_end,
+                "data_offset": cursor + header_size,
+                "data_end": box_end,
+            }
+        )
+        cursor = box_end
+
+    return children
+
+
+def _read_mp4_handler_type(media_file: BinaryIO, track_children: list[Mp4Box]) -> str | None:
+    mdia_box = next((box for box in track_children if box["type"] == "mdia"), None)
+    if mdia_box is None:
+        return None
+
+    mdia_children = _read_mp4_box_children(media_file, mdia_box["data_offset"], mdia_box["data_end"])
+    hdlr_box = next((box for box in mdia_children if box["type"] == "hdlr"), None)
+    if hdlr_box is None:
+        return None
+
+    media_file.seek(int(hdlr_box["data_offset"]) + 8)
+    return media_file.read(4).decode("latin-1") or None
+
+
+def _read_mp4_tkhd_resolution(media_file: BinaryIO, track_children: list[Mp4Box]) -> tuple[int | None, int | None]:
+    tkhd_box = next((box for box in track_children if box["type"] == "tkhd"), None)
+    if tkhd_box is None:
+        return (None, None)
+
+    media_file.seek(int(tkhd_box["data_offset"]))
+    tkhd_payload = media_file.read(int(tkhd_box["data_end"]) - int(tkhd_box["data_offset"]))
+    if len(tkhd_payload) < 8:
+        return (None, None)
+
+    width_raw = int.from_bytes(tkhd_payload[-8:-4], "big")
+    height_raw = int.from_bytes(tkhd_payload[-4:], "big")
+    return (width_raw >> 16 or None, height_raw >> 16 or None)
 
 
 def _build_display_title(file_stem: str) -> str:
@@ -441,6 +534,10 @@ def _format_file_size(size_bytes: int) -> str:
 
 
 def _format_duration(raw_duration: object) -> str:
+    if isinstance(raw_duration, bool):
+        return "Não informado"
+    if not isinstance(raw_duration, (int, float, str)):
+        return "Não informado"
     try:
         duration_seconds = int(float(raw_duration))
     except (TypeError, ValueError):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 from urllib.parse import urlencode
 
 from fastapi import Request, status
@@ -37,7 +37,7 @@ def redirect_with_flash(base_url: str, *, message: str, level: FlashLevel) -> Re
 def extract_flash(request: Request) -> tuple[str | None, FlashLevel | None]:
     """Extract the flash payload from the current request query string."""
     flash_message = request.query_params.get("flash_message")
-    flash_level = request.query_params.get("flash_level")
-    if flash_level not in ALLOWED_FLASH_LEVELS:
-        flash_level = "info" if flash_level else None
-    return flash_message, flash_level
+    raw_flash_level = request.query_params.get("flash_level")
+    if raw_flash_level in ALLOWED_FLASH_LEVELS:
+        return flash_message, cast(FlashLevel, raw_flash_level)
+    return flash_message, ("info" if raw_flash_level else None)

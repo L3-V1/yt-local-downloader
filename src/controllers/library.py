@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import os
+from urllib.parse import urlencode
+
 from fastapi import Request
-from fastapi.responses import RedirectResponse, Response
+from starlette.background import BackgroundTask
+from fastapi.responses import FileResponse, RedirectResponse, Response
 
 from src.controllers.utils import extract_flash, redirect_with_flash, render_template
 from src.services.library import (
+    build_transfer_archive,
     LibraryServiceError,
     delete_video_file,
     delete_video_files,
+    get_video_media_type,
     list_downloaded_videos,
     open_video_file,
     rename_video_file,
@@ -33,44 +39,53 @@ def render_library_page(request: Request) -> Response:
 
 
 def handle_open_library_video(*, file_name: str) -> RedirectResponse:
-    """Open a downloaded video with the system default player.
+    """Redirect to browser playback for a downloaded video.
 
     Args:
         file_name: File selected by the user in the video library.
 
     Returns:
-        Redirect with a one-time success or error message.
+        Redirect to the media URL or back to the library on error.
     """
     try:
-        open_video_file(file_name)
+        file_path = open_video_file(file_name)
     except LibraryServiceError as exc:
         return _redirect_library_error(str(exc))
 
-    return redirect_with_flash(
-        LIBRARY_PAGE_URL,
-        message="Vídeo aberto no reprodutor padrão do sistema.",
-        level="success",
+    query_string = urlencode({"file_name": file_path.name})
+    return RedirectResponse(url=f"/library/media?{query_string}", status_code=303)
+
+
+def stream_library_video(*, file_name: str) -> FileResponse:
+    """Serve a downloaded video file for browser playback or download."""
+    file_path = open_video_file(file_name)
+    return FileResponse(
+        path=file_path,
+        media_type=get_video_media_type(file_path),
+        filename=file_path.name,
+        content_disposition_type="inline",
     )
 
 
-def handle_transfer_library_video(*, file_name: str) -> RedirectResponse:
-    """Move a downloaded video to a user-selected directory.
+def handle_transfer_library_video(*, file_name: str) -> Response:
+    """Return a downloaded video file as an attachment.
 
     Args:
         file_name: File selected by the user in the video library.
 
     Returns:
-        Redirect with a one-time success or error message.
+        Attachment response or redirect with an error message.
     """
     try:
-        transfer_video_file(file_name)
+        file_path = transfer_video_file(file_name)
     except LibraryServiceError as exc:
         return _redirect_library_error(str(exc))
 
-    return redirect_with_flash(
-        LIBRARY_PAGE_URL,
-        message="Vídeo transferido com sucesso para o diretório selecionado.",
-        level="success",
+    return FileResponse(
+        path=file_path,
+        media_type=get_video_media_type(file_path),
+        filename=file_path.name,
+        content_disposition_type="attachment",
     )
 
 
@@ -96,27 +111,41 @@ def handle_rename_library_video(*, file_name: str, new_file_name: str) -> Redire
     )
 
 
-def handle_transfer_library_videos(*, file_names: list[str]) -> RedirectResponse:
-    """Move multiple downloaded videos to a user-selected directory.
+def handle_transfer_library_videos(*, file_names: list[str]) -> Response:
+    """Return selected downloaded videos as a zip attachment.
 
     Args:
         file_names: Selected files from the video library.
 
     Returns:
-        Redirect with a one-time success or error message.
+        Attachment response or redirect with an error message.
     """
     try:
-        moved_paths = transfer_video_files(file_names)
+        selected_files = transfer_video_files(file_names)
     except LibraryServiceError as exc:
         return _redirect_library_error(str(exc))
 
-    quantity = len(moved_paths)
-    message = _pluralize_video_message(
-        quantity,
-        singular="1 vídeo foi transferido com sucesso para o diretório selecionado.",
-        plural_template="{count} vídeos foram transferidos com sucesso para o diretório selecionado.",
+    if len(selected_files) == 1:
+        file_path = selected_files[0]
+        return FileResponse(
+            path=file_path,
+            media_type=get_video_media_type(file_path),
+            filename=file_path.name,
+            content_disposition_type="attachment",
+        )
+
+    try:
+        archive_path = build_transfer_archive(selected_files)
+    except LibraryServiceError as exc:
+        return _redirect_library_error(str(exc))
+
+    return FileResponse(
+        path=archive_path,
+        media_type="application/zip",
+        filename="videos-selecionados.zip",
+        content_disposition_type="attachment",
+        background=BackgroundTask(_delete_temporary_file, archive_path),
     )
-    return redirect_with_flash(LIBRARY_PAGE_URL, message=message, level="success")
 
 
 def handle_delete_library_video(*, file_name: str) -> RedirectResponse:
@@ -170,3 +199,10 @@ def _pluralize_video_message(quantity: int, *, singular: str, plural_template: s
     if quantity == 1:
         return singular
     return plural_template.format(count=quantity)
+
+
+def _delete_temporary_file(file_path: str | os.PathLike[str]) -> None:
+    try:
+        os.unlink(file_path)
+    except FileNotFoundError:
+        return

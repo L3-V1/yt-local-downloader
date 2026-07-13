@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from fastapi import BackgroundTasks, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from src.controllers.utils import extract_flash, redirect_with_flash, render_template
+from src.controllers.utils import FlashLevel, extract_flash, redirect_with_flash, render_template
 from src.services.download import (
     DownloadRequestError,
     download_registry,
@@ -18,7 +18,7 @@ from src.services.download import (
 class DownloadSubmissionResult:
     success: bool
     message: str
-    level: str
+    level: FlashLevel
     download_id: str | None = None
 
 

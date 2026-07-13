@@ -6,6 +6,8 @@ from shutil import which
 
 if os.name == "nt":
     import winreg
+else:
+    winreg = None
 
 
 def get_preferred_js_runtime() -> str | None:
@@ -85,6 +87,8 @@ def _get_windows_path(scope: str) -> str:
 
 
 def _get_registry_target(scope: str) -> tuple[int, str]:
+    if winreg is None:
+        raise RuntimeError("Windows registry access is only available on Windows.")
     if scope == "User":
         return (winreg.HKEY_CURRENT_USER, r"Environment")
     return (

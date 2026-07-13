@@ -113,7 +113,12 @@ A aplicacao ficara disponivel em:
 http://localhost:5000
 ```
 
-Os videos baixados ficam persistidos no volume `downloads_data`.
+Com a configuracao padrao do `docker-compose.yml`:
+
+- os videos baixados ficam em `./downloads` no host;
+- a acao `Reproduzir` abre o arquivo no navegador por HTTP;
+- a acao `Transferir` envia o arquivo para download no navegador do usuario;
+- a acao `Transferir selecionados` envia um arquivo `.zip` com os videos selecionados.
 
 Para encerrar:
 
@@ -124,6 +129,7 @@ docker compose down
 ## 7. Observacoes importantes
 
 - O projeto foi pensado para uso local em `http://localhost:5000`.
+- O comportamento da biblioteca segue uma abordagem compativel com Docker: reproducao via navegador e transferencia via download HTTP.
 - Se o `uvicorn` for executado sem `--port`, ele continuara usando a porta padrao dele, que e `8000`.
 - Nao ha autenticacao, login, cookies ou tokens.
 - O download deve ser usado apenas para conteudos publicos e autorizados.

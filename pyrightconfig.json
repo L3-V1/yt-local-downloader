@@ -1,0 +1,10 @@
+{
+  "venvPath": ".",
+  "venv": ".env",
+  "typeCheckingMode": "standard",
+  "include": [
+    "main.py",
+    "src",
+    "tests"
+  ]
+}

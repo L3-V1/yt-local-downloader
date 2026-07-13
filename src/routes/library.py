@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi import APIRouter, Form, Query, Request
+from fastapi.responses import FileResponse, RedirectResponse, Response
 
 from src.controllers.library import (
     handle_delete_library_video,
@@ -13,6 +13,7 @@ from src.controllers.library import (
     handle_transfer_library_video,
     handle_transfer_library_videos,
     render_library_page,
+    stream_library_video,
 )
 
 router = APIRouter()
@@ -28,6 +29,11 @@ async def open_library_video(file_name: str = Form(...)) -> RedirectResponse:
     return handle_open_library_video(file_name=file_name)
 
 
+@router.get("/library/media")
+async def library_media(file_name: str = Query(...)) -> FileResponse:
+    return stream_library_video(file_name=file_name)
+
+
 @router.post("/library/rename")
 async def rename_library_video(
     file_name: str = Form(...),
@@ -37,14 +43,14 @@ async def rename_library_video(
 
 
 @router.post("/library/transfer")
-async def transfer_library_video(file_name: str = Form(...)) -> RedirectResponse:
+async def transfer_library_video(file_name: str = Form(...)) -> Response:
     return handle_transfer_library_video(file_name=file_name)
 
 
 @router.post("/library/transfer-batch")
 async def transfer_library_videos(
     file_names: Annotated[list[str], Form(...)],
-) -> RedirectResponse:
+) -> Response:
     return handle_transfer_library_videos(file_names=file_names)
 
 

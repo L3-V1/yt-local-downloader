@@ -9,7 +9,4 @@ services:
     environment:
       TZ: America/Sao_Paulo
     volumes:
-      - downloads_data:/app/downloads
-
-volumes:
-  downloads_data:
+      - ./downloads:/app/downloads
