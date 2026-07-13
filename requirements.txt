@@ -2,5 +2,6 @@ fastapi
 uvicorn[standard]
 jinja2
 python-multipart
+mutagen
 yt-dlp[default]
 pytest

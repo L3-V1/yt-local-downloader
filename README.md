@@ -4,7 +4,7 @@ Miniaplicacao web local em FastAPI para pesquisar videos publicos do YouTube e i
 
 ## Requisitos
 
-- Windows
+- Windows ou Linux
 - Python 3.11+ instalado
 - Node.js 22+ ou Deno instalado para compatibilidade atual com YouTube no `yt-dlp`
 - Acesso a internet para pesquisar videos publicos e baixar dependencias
@@ -26,14 +26,21 @@ Miniaplicacao web local em FastAPI para pesquisar videos publicos do YouTube e i
 
 ## 1. Criar e ativar o ambiente virtual
 
-No PowerShell, dentro da raiz do projeto:
+Com `make`, use:
 
-```powershell
-python -m venv .env
-.\.env\Scripts\Activate.ps1
+```bash
+make setup
 ```
 
-Se a pasta `.env` ja existir, basta ativar:
+Ativacao manual:
+
+No Linux:
+
+```bash
+. .env/bin/activate
+```
+
+No PowerShell:
 
 ```powershell
 .\.env\Scripts\Activate.ps1
@@ -41,9 +48,11 @@ Se a pasta `.env` ja existir, basta ativar:
 
 ## 2. Instalar as dependencias
 
-Com o ambiente virtual ativo:
+Se voce usou `make setup`, essa etapa ja foi executada.
 
-```powershell
+Manual, com o ambiente virtual ativo:
+
+```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
@@ -55,9 +64,27 @@ Observacoes:
 
 ## 3. Rodar a aplicacao
 
-Ainda na raiz do projeto:
+Com `make`:
+
+```bash
+make run
+```
+
+Ou, de forma explicita por sistema operacional:
+
+```bash
+make run_linux
+```
 
 ```powershell
+make run_win
+```
+
+Os targets de execucao fazem a ativacao da virtualenv dentro do proprio comando antes de iniciar o `uvicorn`.
+
+Manual, ainda na raiz do projeto:
+
+```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
 
@@ -87,24 +114,26 @@ Os arquivos baixados sao salvos na pasta local `downloads/`.
 
 ## 5. Rodar os testes
 
-```powershell
+Com `make`:
+
+```bash
+make test
+```
+
+Manual:
+
+```bash
 python -m pytest -q
 ```
 
 ## 6. Executar com Docker
 
-O arquivo `docker-compose.yml` esta configurado para usar uma imagem ja criada localmente.
+O `docker-compose.yml` ja possui a instrucao de build da imagem.
 
-Primeiro, gere a imagem:
+Para subir a aplicacao:
 
-```powershell
-docker build -t youtube-local-downloader:latest .
-```
-
-Depois suba o conteiner:
-
-```powershell
-docker compose up -d
+```bash
+docker compose up -d --build
 ```
 
 A aplicacao ficara disponivel em:
@@ -122,7 +151,7 @@ Com a configuracao padrao do `docker-compose.yml`:
 
 Para encerrar:
 
-```powershell
+```bash
 docker compose down
 ```
 
@@ -130,6 +159,7 @@ docker compose down
 
 - O projeto foi pensado para uso local em `http://localhost:5000`.
 - O comportamento da biblioteca segue uma abordagem compativel com Docker: reproducao via navegador e transferencia via download HTTP.
+- O container instala `ffmpeg`, o que disponibiliza `ffprobe` para enriquecer os metadados da biblioteca quando o binario estiver presente na imagem.
 - Se o `uvicorn` for executado sem `--port`, ele continuara usando a porta padrao dele, que e `8000`.
 - Nao ha autenticacao, login, cookies ou tokens.
 - O download deve ser usado apenas para conteudos publicos e autorizados.

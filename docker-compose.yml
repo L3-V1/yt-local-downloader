@@ -1,5 +1,7 @@
 services:
   app:
+    build:
+      context: .
     image: youtube-local-downloader:latest
     container_name: youtube-local-downloader
     init: true
