@@ -9,8 +9,8 @@ router = APIRouter()
 
 
 @router.get("/")
-async def index(request: Request) -> Response:
-    return render_index_page(request)
+async def index(request: Request, query: str = "") -> Response:
+    return render_index_page(request, query=query)
 
 
 @router.post("/search")

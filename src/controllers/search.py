@@ -12,12 +12,12 @@ from src.services.search import PAGE_SIZE, SearchResult, SearchServiceError, sea
 LOGGER = logging.getLogger(__name__)
 
 
-def render_index_page(request: Request) -> Response:
+def render_index_page(request: Request, *, query: str = "") -> Response:
     """Render the initial search page."""
     flash_message, flash_level = extract_flash(request)
     return _render_index(
         request=request,
-        query="",
+        query=query.strip(),
         results=[],
         flash_message=flash_message,
         flash_level=flash_level,

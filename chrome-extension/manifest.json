@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Local Downloader Helper",
+  "description": "Envia o link do vídeo atual do YouTube para a busca do YouTube Local Downloader.",
+  "version": "1.0.0",
+  "action": {
+    "default_title": "YouTube Local Downloader Helper",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "http://desenv.local:5000/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://youtu.be/*"
+  ]
+}

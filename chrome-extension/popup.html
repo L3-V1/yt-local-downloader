@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Local Downloader Helper</title>
+    <link rel="stylesheet" href="globals.css">
+</head>
+<body class="bg-app text-body">
+    <main class="w-[360px] p-4">
+        <section class="card space-y-4">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="badge">Auxiliar da busca</p>
+                    <h1 class="title mt-3">Enviar vídeo para o app</h1>
+                    <p class="muted mt-2">
+                        Detecte o vídeo aberto no YouTube e preencha automaticamente o campo de busca da aplicação local.
+                    </p>
+                </div>
+                <div class="logo-box">YT</div>
+            </div>
+
+            <div class="space-y-2">
+                <label for="appBaseUrl" class="label">Endereço da aplicação</label>
+                <input
+                    id="appBaseUrl"
+                    type="url"
+                    value="http://desenv.local:5000/"
+                    placeholder="http://desenv.local:5000/"
+                    class="input"
+                >
+                <p class="helper">Use o endereço em que o YouTube Local Downloader está rodando no seu computador.</p>
+            </div>
+
+            <div class="space-y-2">
+                <p class="label">Link detectado</p>
+                <div id="videoUrlCard" class="surface">
+                    <p id="videoUrlText" class="link-preview">Abra um vídeo do YouTube para continuar.</p>
+                </div>
+                <p id="statusMessage" class="helper"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button id="copyButton" type="button" class="button button-secondary" disabled>
+                    Copiar link
+                </button>
+                <button id="openAppButton" type="button" class="button button-primary" disabled>
+                    Abrir no app
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="src/popup.js"></script>
+</body>
+</html>
