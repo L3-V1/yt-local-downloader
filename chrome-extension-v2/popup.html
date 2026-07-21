@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Local Downloader Helper V2</title>
+    <link rel="stylesheet" href="globals.css">
+</head>
+<body class="bg-app text-body">
+    <main class="w-[320px] p-3">
+        <section class="card space-y-3">
+            <div class="space-y-1 hero-block">
+                <h1 class="title">Baixar vídeo</h1>
+                <p id="videoUrlText" class="link-preview compact">Abra um vídeo do YouTube para continuar.</p>
+            </div>
+
+            <div class="space-y-2 api-block">
+                <label for="apiBaseUrl" class="label">API</label>
+                <input
+                    id="apiBaseUrl"
+                    type="url"
+                    value="https://api.cobalt.liubquanti.click/"
+                    placeholder="https://api.cobalt.liubquanti.click/"
+                    class="input"
+                >
+            </div>
+
+            <div class="grid split-fields gap-3 options-block">
+                <label class="space-y-2">
+                    <span class="label">Formato</span>
+                    <select id="videoFormat" class="input">
+                        <option value="mp4">MP4</option>
+                        <option value="webm">WEBM</option>
+                        <option value="original">Original</option>
+                    </select>
+                </label>
+                <label class="space-y-2">
+                    <span class="label">Qualidade</span>
+                    <select id="videoQuality" class="input input-compact-text">
+                        <option value="best">Melhor disponível</option>
+                        <option value="1080">Até 1080p</option>
+                        <option value="720">Até 720p</option>
+                        <option value="480">Até 480p</option>
+                    </select>
+                </label>
+            </div>
+
+            <p id="statusMessage" class="helper status-line">Aguardando ação.</p>
+
+            <button id="downloadButton" type="button" class="button button-primary w-full" disabled>
+                Baixar vídeo
+            </button>
+        </section>
+    </main>
+
+    <script type="module" src="src/popup.js"></script>
+</body>
+</html>

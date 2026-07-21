@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Local Downloader Helper V2",
+  "description": "Baixa experimentalmente o vídeo atual do YouTube por uma API de terceiros e salva o arquivo pelo Chrome.",
+  "version": "2.0.0",
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "YouTube Local Downloader Helper V2",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://youtu.be/*"
+  ]
+}
